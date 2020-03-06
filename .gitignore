@@ -16,3 +16,6 @@ start.sh
 
 # IDE files
 .idea
+
+# Data files
+data
