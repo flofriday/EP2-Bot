@@ -84,7 +84,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 	message := "*New commits:*🎉🎊\n"
 	for _, commit := range newCommits {
 		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
-			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("01.02.2006 15:04"), commit.Message)
+			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
 	}
 
 	// Send the message
@@ -159,7 +159,7 @@ func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	message := "*New commits:*\n\n"
 	for _, commit := range newCommits {
 		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
-			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("01.02.2006 15:04"), commit.Message)
+			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
 	}
 	sendMessage(bot, update, message)
 }
@@ -174,7 +174,7 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	message := ""
 	for _, commit := range commits {
 		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
-			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("01.02.2006 15:04"), commit.Message)
+			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
 	}
 	sendMessage(bot, update, message)
 }
