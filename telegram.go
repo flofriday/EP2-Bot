@@ -35,6 +35,8 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		downloadCmd(bot, update)
 	case "history":
 		historyCmd(bot, update)
+	case "start":
+		helpCmd(bot, update)
 	case "help":
 		helpCmd(bot, update)
 	default:
