@@ -15,7 +15,7 @@ run:
       docker run -d --restart unless-stopped
       --env TELEGRAM_TOKEN=$TELEGRAM_TOKEN
       --env TELEGRAM_ADMIN=$TELEGRAM_ADMIN
-      --env GIT_URL=$GIT_URL
+      --env GIT_URL=https://$GIT_URL_USER:$GIT_URL_PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/$GIT_URL_USER.git
       --mount type=volume,source=ep2bot-volume,target=/app/data
       --name ep2bot-container ep2bot-template
   only: 
