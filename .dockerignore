@@ -1,1 +1,16 @@
+# Ignore the data file
+data
+
+# Ignore other files
+.dockerignore
+.gitignore
+deploy.md
+docker-deploy.md
+Dockerfile
+EP2-Bot
+EP2-Bot.exe
+LICENSE
+README.md
+service-deploy.md
+start.sh
 
