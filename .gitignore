@@ -13,3 +13,6 @@
 
 # A secret file
 start.sh
+
+# IDE files
+.idea
