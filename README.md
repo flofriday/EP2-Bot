@@ -1,6 +1,7 @@
 # EP2-Bot
 A bot for "Einführung in die Programmierung 2" TU Vienna
 
+![Screenshot](screenshot.png)
 
 At [TU Vienna](https://www.tuwien.at/en/) we get a git repository for "Einführung in die Programmierung 2" (Introduction to Programming 2). 
 All of our assignments will get to us via that git repo and also our points.
