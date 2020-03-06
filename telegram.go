@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jasonlvhit/gocron"
+	gitobject "gopkg.in/src-d/go-git.v4/plumbing/object"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
@@ -29,10 +31,14 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		readmeCmd(bot, update)
 	case "cat":
 		catCmd(bot, update)
+	case "download":
+		downloadCmd(bot, update)
 	case "history":
 		historyCmd(bot, update)
+	case "help":
+		helpCmd(bot, update)
 	default:
-		sendMessage(bot, update, "Sorry, I don't know that command.")
+		sendMessage(bot, update, "Sorry, I don't know that command.\nType /help to see what I know.")
 	}
 
 }
@@ -62,11 +68,11 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 	// Pull the repo
 	err = pull()
 	if err != nil {
-		log.Println("An error occourced with the background task, when pulling the repo:", err.Error())
+		log.Println("An error occourced with the background task, while pulling the repo:", err.Error())
 		return
 	}
 	cur, _ := getCurrentCommit()
-	fmt.Println("new Hash", cur)
+	fmt.Println("New Hash", cur)
 
 	// Get all the new commits
 	newCommits, err := historySince(oldHash)
@@ -75,14 +81,25 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	// Send the message about all the new commits
-	if len(newCommits) == 0 {
+	// Filter commits from the user. The user commited them so why would he want to see them ?
+	newFilteredCommits := make([]gitobject.Commit, 0, 0)
+	for _, c := range newCommits {
+		if strings.Contains(c.Author.Email, getGitUser()) {
+			continue
+		}
+
+		newFilteredCommits = append(newFilteredCommits, c)
+	}
+
+	// Check if there are new commits to notify
+	if len(newFilteredCommits) == 0 {
 		log.Println("Backgroundjob ran, no new commits to send the user.")
 		return
 	}
 
+	// Create a message and send it the user
 	message := "*New commits:*🎉🎊\n"
-	for _, commit := range newCommits {
+	for _, commit := range newFilteredCommits {
 		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
 			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
 	}
@@ -98,7 +115,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	files, err := listFiles(update.Message.CommandArguments())
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprint("An error occoured when listing the files.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprint("An error occoured while listing the files.\n`Error: %s`", err.Error()))
 		return
 	}
 
@@ -112,19 +129,25 @@ func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 func catCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	content, err := readFile(update.Message.CommandArguments())
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprintf("An error occoured when reading a file.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading a file.\n`Error: %s`", err.Error()))
 		return
 	}
 
 	_, filename := filepath.Split(update.Message.CommandArguments())
-	message := fmt.Sprintf("*%s*\n```%s```", filename, content)
+	message := fmt.Sprintf("*%s*\n```%s```", filename, string(content))
 	sendMessage(bot, update, message)
+}
+
+func downloadCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	path := filepath.Join(getGitDir(), update.Message.CommandArguments())
+
+	sendFile(bot, update, path)
 }
 
 func readmeCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	content, err := readFile("README.md")
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprintf("An error occoured when reading a file.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading a file.\n`Error: %s`", err.Error()))
 		return
 	}
 
@@ -135,13 +158,13 @@ func readmeCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	oldHash, err := getCurrentCommit()
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprintf("An error occoured when pulling the repository.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while pulling the repository.\n`Error: %s`", err.Error()))
 		return
 	}
 
 	err = pull()
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprintf("An error occoured when pulling the repository.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while pulling the repository.\n`Error: %s`", err.Error()))
 		return
 	}
 
@@ -152,7 +175,7 @@ func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	}
 
 	if len(newCommits) == 0 {
-		sendMessage(bot, update, "No new commits on origin. Repository is already up to date.")
+		sendMessage(bot, update, "Repository is already up to date.")
 		return
 	}
 
@@ -167,7 +190,7 @@ func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	commits, err := history()
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprintf("An error occoured when reading the repository.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading the repository.\n`Error: %s`", err.Error()))
 		return
 	}
 
@@ -177,6 +200,28 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
 	}
 	sendMessage(bot, update, message)
+}
+
+func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	commands := `
+/ls - List all files in a directory
+/cat - Print a file context in a chat message
+/download - Send a file
+/readme - Similar to /cat README.md
+/history - Print the git history
+/pull - Pull the newest git changes
+/help - This help
+`
+	sendMessage(bot, update, "*A List of what I can do:*\n"+commands)
+}
+
+func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
+	msg := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, path)
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Println("Error: ", err.Error())
+		sendMessage(bot, update, fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error()))
+	}
 }
 
 func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {

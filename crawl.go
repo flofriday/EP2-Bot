@@ -146,10 +146,9 @@ func getCurrentCommit() (string, error) {
 	return ref.Hash().String(), nil
 }
 
-func readFile(path string) (string, error) {
+func readFile(path string) ([]byte, error) {
 	// TODO avoid path tranversal attack
-	bytes, err := ioutil.ReadFile(filepath.Join(getGitDir(), path))
-	return string(bytes), err
+	return ioutil.ReadFile(filepath.Join(getGitDir(), path))
 }
 
 func listFiles(path string) ([]string, error) {
