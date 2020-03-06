@@ -22,7 +22,18 @@ GIT_URL=https://USER:PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/USER.git
 Replace the XXXX with the token for your telegrambot (you can get this via botfather). YYYY is your Telegram user id. 
 In the GIT_URL the USER is your Matrikelnumber and PASSWORD your git password.
 
-## Deploy 
-You can deploy the bot with docker (~or as a systemd service~ actually you can only deploy it via docker at the moment). 
+### Or try with docker
+First install [docker](https://www.docker.com/)
+```bash
+docker build -t ep2bot-template .
+docker run --rm 
+      --env TELEGRAM_TOKEN=XXXX
+      --env TELEGRAM_ADMIN=YYYY
+      --env GIT_URL=https://USER:PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/USER.git
+      --name ep2bot-container ep2bot-template
+```
 
-Look at docker-deploy.md to see how you can deploy it.
+## Deploy 
+You can deploy the bot with docker or as a systemd service. (The docker deployment is recommended as it is easier.)
+
+Look at docker-deploy.md or service-deploy.md to see how you can deploy it.
