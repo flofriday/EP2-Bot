@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 // Clone the repo if it doesn't exist of download it if it does.
@@ -54,6 +55,7 @@ func pull() error {
 	return nil
 }
 
+// The list is chronocally sorted with the newest commits as last
 func history() ([]gitobject.Commit, error) {
 	// Open the repo
 	r, err := git.PlainOpen(getGitDir())
@@ -77,6 +79,11 @@ func history() ([]gitobject.Commit, error) {
 		return nil, err
 	}
 
+	// Sort the commits
+	sort.Slice(commits, func(i, j int) bool {
+		return commits[i].Author.When.Local().Unix() < commits[j].Author.When.Local().Unix()
+	})
+
 	return commits, nil
 }
 
@@ -90,19 +97,20 @@ func historyBetween(since string, until string) ([]gitobject.Commit, error) {
 
 	// Filter the commits
 	var between []gitobject.Commit
-	sawUntil := false
+	sawSince := false
 	for _, c := range all {
+		if sawSince {
+			between = append(between, c)
+		}
+
 		if c.Hash.String() == since {
-			break
+			sawSince = true
 		}
 
 		if c.Hash.String() == until {
-			sawUntil = true
+			break
 		}
 
-		if sawUntil {
-			between = append(between, c)
-		}
 	}
 
 	return between, nil
