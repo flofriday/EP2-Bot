@@ -1,0 +1,22 @@
+stages:
+  - build
+  - deploy
+
+compile:
+  stage: build
+  script: docker build -t ep2bot-template .
+    
+run:
+  stage: deploy
+  script:
+    - echo -e "docker stop ep2bot-container\nexit 0" | bash
+    - echo -e "docker rm ep2bot-container\nexit 0" | bash
+    - >
+      docker run -d --restart unless-stopped
+      --env TELEGRAM_TOKEN=$TELEGRAM_TOKEN
+      --env TELEGRAM_ADMIN=$TELEGRAM_ADMIN
+      --env GIT_URL=https://$GIT_URL_USER:$GIT_URL_PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/$GIT_URL_USER.git
+      --mount type=volume,source=ep2bot-volume,target=/app/data
+      --name ep2bot-container ep2bot-template
+  only: 
+    - master
