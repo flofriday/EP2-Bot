@@ -147,12 +147,12 @@ func getCurrentCommit() (string, error) {
 }
 
 func readFile(path string) ([]byte, error) {
-	// TODO avoid path tranversal attack
+	path = filepath.Clean(path)
 	return ioutil.ReadFile(filepath.Join(getGitDir(), path))
 }
 
 func listFiles(path string) ([]string, error) {
-	// TODO avoid path tranversal attack
+	path = filepath.Clean("/" + path)
 	files, err := ioutil.ReadDir(filepath.Join(getGitDir(), path))
 	if err != nil {
 		log.Println(err)
