@@ -53,7 +53,7 @@ func startBackgroundManager(bot *tgbotapi.BotAPI) {
 
 	// Setup the automatic call of backgroundJob
 	go func() {
-		gocron.Every(10).Minutes().Do(backgroundJob, bot)
+		gocron.Every(30).Minutes().Do(backgroundJob, bot)
 		<-gocron.Start()
 	}()
 }
