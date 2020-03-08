@@ -102,16 +102,15 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 	// Create a message and send it the user
 	message := "*New commits:*🎉🎊\n"
 	for _, commit := range newFilteredCommits {
-		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
-			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
+		formatCommit(commit)
 	}
 
 	// Send the message
-	log.Println("Backgroundjob ran, sent the user the updates.")
 	admin, _ := strconv.ParseInt(os.Getenv("TELEGRAM_ADMIN"), 10, 64)
 	msg := tgbotapi.NewMessage(admin, message)
 	msg.ParseMode = "Markdown"
 	_, _ = bot.Send(msg)
+	log.Println("Backgroundjob ran, sent the user the updates.")
 }
 
 func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
@@ -183,8 +182,7 @@ func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 	message := "*New commits:*\n\n"
 	for _, commit := range newCommits {
-		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
-			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
+		message += formatCommit(commit)
 	}
 	sendMessage(bot, update, message)
 }
@@ -198,8 +196,7 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 	message := ""
 	for _, commit := range commits {
-		message += fmt.Sprintf("*commit %s*\nAuthor: %s<%s>\nDate: %s\n``` %s ```\n\n",
-			commit.Hash, commit.Author.Name, commit.Author.Email, commit.Author.When.Local().Format("02.01.2006 15:04"), commit.Message)
+		message += formatCommit(commit)
 	}
 	sendMessage(bot, update, message)
 }
@@ -217,6 +214,12 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	sendMessage(bot, update, "*A List of what I can do:*\n"+commands)
 }
 
+func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+	msg.ParseMode = "Markdown"
+	_, _ = bot.Send(msg)
+}
+
 func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
 	msg := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, path)
 	_, err := bot.Send(msg)
@@ -226,10 +229,40 @@ func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
 	}
 }
 
-func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-	msg.ParseMode = "Markdown"
-	_, _ = bot.Send(msg)
+func formatCommit(commit gitobject.Commit) string {
+	// Get the files from the commit
+	var files []string
+	stats, err := commit.Stats()
+	if err == nil {
+		for _, stat := range stats {
+			files = append(files, stat.Name)
+		}
+	}
+
+	// Generate the text for the files
+	fileText := ""
+	if len(files) == 0 {
+		fileText = "_unable to load the files_"
+	} else {
+		fileText = fmt.Sprintf("\\[%d] `%s`", len(files), strings.Join(files, ", "))
+	}
+
+	// Generate the message text where the first line is treated like a header and is in bold, while the rest is normal
+	// text
+	message := strings.SplitN(strings.TrimSpace(commit.Message), "\n", 1)
+	messageText := fmt.Sprintf("*%s*", message[0])
+	if len(message) > 1 {
+		messageText += "\n" + message[1]
+	}
+
+	return fmt.Sprintf("%s\nHash: %s\nAuthor: %s <%s>\nDate: %s\nFiles: %s\n\n",
+		messageText,
+		commit.Hash,
+		commit.Author.Name,
+		commit.Author.Email,
+		commit.Author.When.Local().Format("02.01.2006 15:04"),
+		fileText,
+	)
 }
 
 func isAdmin(telegramID int64) bool {
