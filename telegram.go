@@ -17,7 +17,7 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 	// Only allow the owner access
 	if isAdmin(update.Message.Chat.ID) == false {
-		sendMessage(bot, update, "Sorry, only my master is allowed to access me.")
+		sendMessage(bot, update, "Sorry, I can only answer my master.\n\n... but you can install a copy, just like me.\nhttps://github.com/flofriday/EP2-Bot")
 		return
 	}
 
@@ -211,7 +211,7 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 /pull - Pull the newest git changes
 /help - This help
 `
-	sendMessage(bot, update, "*A List of what I can do:*\n"+commands)
+	sendMessage(bot, update, fmt.Sprintf("*A List of what I can do:*%s", commands))
 }
 
 func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
