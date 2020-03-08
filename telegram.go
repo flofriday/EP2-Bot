@@ -249,10 +249,10 @@ func formatCommit(commit gitobject.Commit) string {
 
 	// Generate the message text where the first line is treated like a header and is in bold, while the rest is normal
 	// text
-	message := strings.SplitN(strings.TrimSpace(commit.Message), "\n", 1)
+	message := strings.SplitN(strings.TrimSpace(commit.Message), "\n", 2)
 	messageText := fmt.Sprintf("*%s*", message[0])
 	if len(message) > 1 {
-		messageText += "\n" + message[1]
+		messageText += "\n" + strings.TrimSpace(message[1])
 	}
 
 	return fmt.Sprintf("%s\nHash: %s\nAuthor: %s <%s>\nDate: %s\nFiles: %s\n\n",
