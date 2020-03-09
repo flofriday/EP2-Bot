@@ -229,12 +229,17 @@ func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
 }
 
 func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
+	err := checkPath(path)
+	if err != nil {
+		sendMessage(bot, update, fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error()))
+		return
+	}
 	msg := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, path)
 	msg.Caption = hideSecrets(msg.Caption)
-	_, err := bot.Send(msg)
+	_, err = bot.Send(msg)
 	if err != nil {
 		log.Println("Error: ", err.Error())
-		sendMessage(bot, update, hideSecrets(fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error())))
+		sendMessage(bot, update, fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error()))
 	}
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"gopkg.in/src-d/go-git.v4"
 	gitobject "gopkg.in/src-d/go-git.v4/plumbing/object"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 // Clone the repo if it doesn't exist of download it if it does.
@@ -148,11 +150,20 @@ func getCurrentCommit() (string, error) {
 
 func readFile(path string) ([]byte, error) {
 	path = filepath.Clean(path)
+	err := checkPath(path)
+	if err != nil {
+		return nil, err
+	}
 	return ioutil.ReadFile(filepath.Join(getGitDir(), path))
 }
 
 func listFiles(path string) ([]string, error) {
 	path = filepath.Clean("/" + path)
+	err := checkPath(path)
+	if err != nil {
+		return nil, err
+	}
+
 	files, err := ioutil.ReadDir(filepath.Join(getGitDir(), path))
 	if err != nil {
 		log.Println(err)
@@ -173,4 +184,12 @@ func listFiles(path string) ([]string, error) {
 	}
 
 	return names, nil
+}
+
+func checkPath(path string) error {
+	if strings.Contains(path, ".git") {
+		return errors.New("you cannot read the git directory")
+	}
+
+	return nil
 }
