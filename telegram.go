@@ -198,7 +198,7 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	if args == "head" && len(commits) > 5 {
 		commits = commits[:5]
 	} else if args == "tail" && len(commits) > 5 {
-		commits = commits[len(commits)-6:]
+		commits = commits[len(commits)-5:]
 	}
 
 	message := ""
