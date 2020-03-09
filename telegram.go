@@ -107,7 +107,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 
 	// Send the message
 	admin, _ := strconv.ParseInt(os.Getenv("TELEGRAM_ADMIN"), 10, 64)
-	msg := tgbotapi.NewMessage(admin, message)
+	msg := tgbotapi.NewMessage(admin, hideSecrets(message))
 	msg.ParseMode = "Markdown"
 	_, _ = bot.Send(msg)
 	log.Println("Backgroundjob ran, sent the user the updates.")
@@ -222,6 +222,7 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 }
 
 func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
+	text = hideSecrets(text)
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
 	msg.ParseMode = "Markdown"
 	_, _ = bot.Send(msg)
@@ -229,10 +230,11 @@ func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
 
 func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
 	msg := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, path)
+	msg.Caption = hideSecrets(msg.Caption)
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Println("Error: ", err.Error())
-		sendMessage(bot, update, fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, hideSecrets(fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error())))
 	}
 }
 
@@ -270,6 +272,12 @@ func formatCommit(commit gitobject.Commit) string {
 		commit.Author.When.Local().Format("02.01.2006 15:04"),
 		fileText,
 	)
+}
+
+func hideSecrets(text string) string {
+	text = strings.ReplaceAll(text, os.Getenv("GIT_URL"), "$GIT_URL")
+	text = strings.ReplaceAll(text, getGitUser(), "$USER")
+	return text
 }
 
 func isAdmin(telegramID int64) bool {
