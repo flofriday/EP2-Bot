@@ -116,7 +116,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	files, err := listFiles(update.Message.CommandArguments())
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprint("An error occoured while listing the files.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while listing the files.\n`Error: %s`", err.Error()))
 		return
 	}
 
