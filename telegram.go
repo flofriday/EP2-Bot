@@ -16,10 +16,10 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
 	// Only allow the owner access
-	/*if isAdmin(update.Message.Chat.ID) == false {
+	if isAdmin(update.Message.Chat.ID) == false {
 		sendMessage(bot, update, "Sorry, I can only answer my master.\n\n... but you can install a copy, just like me.\nhttps://github.com/flofriday/EP2-Bot")
 		return
-	}*/
+	}
 
 	// call the right function to handle the command
 	switch update.Message.Command() {
@@ -116,7 +116,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	files, err := listFiles(update.Message.CommandArguments())
 	if err != nil {
-		sendMessage(bot, update, fmt.Sprint("An error occoured while listing the files.\n`Error: %s`", err.Error()))
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while listing the files.\n`Error: %s`", err.Error()))
 		return
 	}
 
