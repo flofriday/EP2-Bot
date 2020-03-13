@@ -281,7 +281,12 @@ func formatCommit(commit gitobject.Commit) string {
 
 func hideSecrets(text string) string {
 	text = strings.ReplaceAll(text, os.Getenv("GIT_URL"), "$GIT_URL")
-	text = strings.ReplaceAll(text, getGitUser(), "$USER")
+
+	// Only replace the username if there is a username in the url.
+	userName := getGitUser()
+	if userName != "" {
+		text = strings.ReplaceAll(text, getGitUser(), "$USER")
+	}
 	return text
 }
 
