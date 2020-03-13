@@ -1,25 +1,26 @@
+# Choose apline because it has the smallest footprint (download size)
 FROM golang:1.14-alpine
 
-# Install git for go download
-RUN apk add git tzdata
-
-# Set the timezone to central europe
-RUN cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+# Install git for go download and tzdata to have to correct time
+# Also set the correct time and print it
+RUN apk add git tzdata && \
+cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
 echo "Europe/Berlin" >  /etc/timezone && \
 date
 
-# Copy files into the container and download dependencies
+# Set the folder of our bot
 WORKDIR /app
 
+# Copy the files specifying the dependencies and download them
 COPY go.mod go.sum ./
-
 RUN go mod download
 
+# Copy the rest of the files
 COPY . .
 
 # Compile the server
 RUN GO111MODULE=on CGO_ENABLED=0 go build
 
 # Run the server
-CMD ["./EP2-Bot"]
+ENTRYPOINT ["./EP2-Bot"]
 

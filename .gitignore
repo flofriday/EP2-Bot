@@ -5,7 +5,9 @@
 *.so
 *.dylib
 EP2-Bot
+EP2-Bot.exe
 main
+main.exe
 
 # Test binary, built with `go test -c`
 *.test

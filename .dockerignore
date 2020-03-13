@@ -1,16 +1,20 @@
 # Ignore the data file
 data
+.idea
 
 # Ignore other files
 .dockerignore
 .gitignore
-deploy.md
+.gitlab-ci.yml
 docker-deploy.md
 Dockerfile
 EP2-Bot
 EP2-Bot.exe
 LICENSE
+main
+main.exe
 README.md
+screenshot.png
 service-deploy.md
 start.sh
 
