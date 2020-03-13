@@ -8,6 +8,8 @@ All of our assignments and evaluations will get to us via that git repository.
 
 While git is amazing I would love that information without needing to log in every time. 
 So for this reason I wrote this Telegram bot to tell me when new assignments are out.
+The bot crawls the repository every 30minutes and writes me a telegram message if there are new commits that are not
+from me.
 
 ## Try the bot
 You need to install the [golang compiler](https://golang.org/).
