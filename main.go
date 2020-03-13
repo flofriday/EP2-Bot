@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	// Check if all the right environment variables are set.
+	checkEnvironment()
+
 	// Clone the repo if it does not exist
 	err := cloneIfNotExist()
 	if err != nil {
@@ -32,10 +35,36 @@ func main() {
 	// Handle the updates
 	updates, err := bot.GetUpdatesChan(u)
 	for update := range updates {
-		if update.Message == nil { // ignore any non-Message Updates
+		// Ignore non message updates
+		if update.Message == nil {
 			continue
 		}
 
+		// Handle the current update in a new go routine
 		go handleMessage(bot, &update)
+	}
+}
+
+// This function checks if the bot got started with all necessary environment variables set.
+// If not it will print an error message into the terminal and terminate the program.
+func checkEnvironment() {
+	isOk := true
+	if os.Getenv("TELEGRAM_TOKEN") == "" {
+		isOk = false
+		log.Println("The TELEGRAM_TOKEN environment variable is not set.")
+	}
+	if os.Getenv("TELEGRAM_ADMIN") == "" {
+		isOk = false
+		log.Println("The TELEGRAM_ADMIN environment variable is not set.")
+	}
+	if os.Getenv("GIT_URL") == "" {
+		isOk = false
+		log.Println("The GIT_URL environment variable is not set.")
+	}
+
+	if isOk == false {
+		log.Println("You can find more information about how to configure the bot at:")
+		log.Println("https://github.com/flofriday/EP2-Bot")
+		os.Exit(1)
 	}
 }

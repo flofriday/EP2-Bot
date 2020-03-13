@@ -134,7 +134,7 @@ func getGitUser() string {
 }
 
 func getGitDir() string {
-	return filepath.Join("data", getGitUser())
+	return filepath.Join("data", "repo")
 }
 
 // Get the current commit hash

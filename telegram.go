@@ -86,7 +86,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 	// Filter commits from the user. The user commited them so why would he want to see them ?
 	newFilteredCommits := make([]gitobject.Commit, 0, 0)
 	for _, c := range newCommits {
-		if strings.Contains(c.Author.Email, getGitUser()) {
+		if strings.Contains(c.Author.Email, getGitUser()) && getGitUser() != "" {
 			continue
 		}
 
