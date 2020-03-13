@@ -24,7 +24,8 @@ GIT_URL=https://USER:PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/USER.git
 ```
 Replace the XXXX with the token for your telegram bot (you can get this via [BotFather](https://t.me/BotFather)). YYYY is your telegram user id 
 (you can get it via [userinfobot](https://t.me/userinfobot)). 
-In the GIT_URL the USER is your student number (german: Matrikelnummer) and PASSWORD your git (GitLab) password.
+In the GIT_URL the USER is your student number (german: Matrikelnummer) and PASSWORD is a personal access token (you can get this in GitLab under Profile -> Settings.
+Give the token only access to "read_repository") [More about access tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html).
 
 ### Or try with docker
 First install [docker](https://www.docker.com/)
