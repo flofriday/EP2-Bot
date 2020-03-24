@@ -31,11 +31,12 @@ Give the token only access to "read_repository") [More about access tokens](http
 First install [docker](https://www.docker.com/)
 ```bash
 docker build -t ep2bot-template .
-docker run --rm 
-      --env TELEGRAM_TOKEN=XXXX
-      --env TELEGRAM_ADMIN=YYYY
-      --env GIT_URL=https://USER:PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/USER.git
-      --name ep2bot-container ep2bot-template
+docker run --rm \
+      --env TELEGRAM_TOKEN=XXXX \
+      --env TELEGRAM_ADMIN=YYYY \
+      --env GIT_URL=https://USER:PASSWORD@b3.complang.tuwien.ac.at/ep2/2020s/uebung/USER.git \
+      --name ep2bot-container \
+      ep2bot-template 
 ```
 
 ## Deploy 
