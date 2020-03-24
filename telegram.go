@@ -188,19 +188,31 @@ func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 }
 
 func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	// Get all commits from the repository
 	commits, err := history()
 	if err != nil {
 		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading the repository.\n`Error: %s`", err.Error()))
 		return
 	}
 
-	args := strings.TrimSpace(update.Message.CommandArguments())
-	if args == "head" && len(commits) > 5 {
-		commits = commits[:5]
-	} else if args == "tail" && len(commits) > 5 {
-		commits = commits[len(commits)-5:]
+	// Split the arguments
+	rawarg := strings.TrimSpace(update.Message.CommandArguments())
+	args := strings.SplitN(rawarg, " ", 2)
+
+	// By default we return 5 commits, unless the user specifies otherwise
+	number := 5
+	if n, err := strconv.ParseInt(args[len(args)-1], 10, 0); err == nil {
+		number = int(n)
 	}
 
+	// By default we only give the user the tail of the commits, unless he specifies the head
+	if (args[0] == "head") && len(commits) > number {
+		commits = commits[:number]
+	} else if len(commits) > number {
+		commits = commits[len(commits)-number:]
+	}
+
+	// Create the message from the selected commits
 	message := ""
 	for _, commit := range commits {
 		message += formatCommit(commit)
@@ -218,7 +230,11 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 /pull - Pull the newest git changes
 /help - This help
 `
-	sendMessage(bot, update, fmt.Sprintf("*A List of what I can do:*%s", commands))
+	about := `
+I was developed by my creator [flofriday](https://github.com/flofriday), and my source is publicly available on [GitHub](https://github.com/flofriday/EP2-Bot) and [GitLab](https://gitlab.com/flofriday/EP2-Bot).
+`
+
+	sendMessage(bot, update, fmt.Sprintf("*A List of things I can do:*%s\n%s", commands, about))
 }
 
 func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
