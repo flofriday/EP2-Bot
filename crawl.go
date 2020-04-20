@@ -186,6 +186,27 @@ func listFiles(path string) ([]string, error) {
 	return names, nil
 }
 
+func listFilesRaw(path string) ([]string, error) {
+	path = filepath.Clean("/" + path)
+	err := checkPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := ioutil.ReadDir(filepath.Join(getGitDir(), path))
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	names := make([]string, 0, len(files))
+	for _, file := range files {
+		names = append(names, file.Name())
+	}
+
+	return names, nil
+}
+
 func checkPath(path string) error {
 	if strings.Contains(path, ".git") {
 		return errors.New("you cannot read the git directory")

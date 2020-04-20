@@ -7,6 +7,7 @@ import (
 	gitobject "gopkg.in/src-d/go-git.v4/plumbing/object"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,6 +30,8 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		pullCmd(bot, update)
 	case "readme":
 		readmeCmd(bot, update)
+	case "exercise":
+		exerciseCmd(bot, update)
 	case "cat":
 		catCmd(bot, update)
 	case "download":
@@ -42,7 +45,30 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	default:
 		sendMessage(bot, update, "Sorry, I don't know that command.\nType /help to see what I know.")
 	}
+}
 
+func handleCallBackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	log.Printf("[%s] %s", update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+
+	data := strings.SplitN(update.CallbackQuery.Data, " ", 2)
+	switch data[0] {
+	case "download":
+		// Check if the file exists
+		file := data[1]
+		err := checkPath(file)
+		if err != nil {
+			log.Printf("Unable to find file: %s", file)
+			return
+		}
+
+		// Set the action
+		_, _ = bot.Send(tgbotapi.NewChatAction(update.CallbackQuery.Message.Chat.ID, tgbotapi.ChatUploadDocument))
+
+		// Upload a file
+		msg := tgbotapi.NewDocumentUpload(update.CallbackQuery.Message.Chat.ID, path.Join(getGitDir(), file))
+		msg.Caption = hideSecrets(file)
+		_, _ = bot.Send(msg)
+	}
 }
 
 // This function must not be called as a goroutine because it should block and will return once the automatic background
@@ -102,7 +128,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 	// Create a message and send it the user
 	message := "*New commits:*🎉🎊\n"
 	for _, commit := range newFilteredCommits {
-		formatCommit(commit)
+		message += formatCommit(commit)
 	}
 
 	// Send the message
@@ -154,6 +180,62 @@ func readmeCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 	message := fmt.Sprintf("*README.md*\n``` %s ```", content)
 	sendMessage(bot, update, message)
+}
+
+func exerciseCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	// If there is an argument we try to parse it as a number
+	arguments := update.Message.CommandArguments()
+	if arguments != "" {
+		number, err := strconv.Atoi(arguments)
+		if err != nil {
+			sendMessage(bot, update, "The argument musst be a number but was: "+arguments)
+			return
+		}
+
+		file := fmt.Sprintf("angabe/Aufgabenblatt%d.pdf", number)
+		_, err = readFile(file)
+		if err != nil {
+			sendMessage(bot, update, fmt.Sprintf("There is no exercise %d", number))
+			return
+		}
+
+		sendFile(bot, update, path.Join(getGitDir(), file))
+		return
+	}
+
+	// Get all files of angabe
+	allFiles, err := listFilesRaw("angabe")
+	if err != nil {
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading the exercise directory.\n`Error: %s`", err.Error()))
+		return
+	}
+
+	// Save the PDFs to a new list
+	files := make([]string, 0, len(allFiles)/2)
+	for _, file := range allFiles {
+		if strings.HasSuffix(file, ".pdf") {
+			files = append(files, file)
+		}
+	}
+
+	// Build the inline keyboard
+	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+	for _, file := range files {
+		callback := fmt.Sprintf("download angabe/%s", file)
+		row := []tgbotapi.InlineKeyboardButton{tgbotapi.NewInlineKeyboardButtonData(file, callback)}
+		rows = append(rows, row)
+	}
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+	// Show the user all possible exercises
+	message := fmt.Sprintf("There are %d exercises:", len(files))
+	message = hideSecrets(message)
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
+	msg.ParseMode = "Markdown"
+	msg.DisableWebPagePreview = true
+	msg.ReplyMarkup = keyboard
+	_, _ = bot.Send(msg)
+
 }
 
 func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
@@ -226,6 +308,7 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 /cat - Print a file context in a chat message
 /download - Send a file
 /readme - Similar to /cat README.md
+/exercise - Display the exercise PDFs
 /history - Print the git history
 /pull - Pull the newest git changes
 /help - This help
@@ -241,6 +324,7 @@ func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
 	text = hideSecrets(text)
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
 	msg.ParseMode = "Markdown"
+	msg.DisableWebPagePreview = true
 	_, _ = bot.Send(msg)
 }
 
@@ -250,6 +334,11 @@ func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
 		sendMessage(bot, update, fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error()))
 		return
 	}
+
+	// Tell the client that we are uploading a file
+	sendAction(bot, update, tgbotapi.ChatUploadDocument)
+
+	// Upload a file
 	msg := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, path)
 	msg.Caption = hideSecrets(msg.Caption)
 	_, err = bot.Send(msg)
@@ -257,6 +346,10 @@ func sendFile(bot *tgbotapi.BotAPI, update *tgbotapi.Update, path string) {
 		log.Println("Error: ", err.Error())
 		sendMessage(bot, update, fmt.Sprintf("Unable to send you the file\n`Error: %s`", err.Error()))
 	}
+}
+
+func sendAction(bot *tgbotapi.BotAPI, update *tgbotapi.Update, action string) {
+	_, _ = bot.Send(tgbotapi.NewChatAction(update.Message.Chat.ID, action))
 }
 
 func formatCommit(commit gitobject.Commit) string {

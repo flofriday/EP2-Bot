@@ -35,13 +35,16 @@ func main() {
 	// Handle the updates
 	updates, err := bot.GetUpdatesChan(u)
 	for update := range updates {
-		// Ignore non message updates
-		if update.Message == nil {
-			continue
+		// Handle the current update in a new go routine
+		if update.Message != nil {
+			go handleMessage(bot, &update)
 		}
 
 		// Handle the current update in a new go routine
-		go handleMessage(bot, &update)
+		if update.CallbackQuery != nil {
+			go handleCallBackQuery(bot, &update)
+		}
+
 	}
 }
 
