@@ -8,11 +8,16 @@ import (
 	"sync"
 )
 
-var users = make(map[int64]bool, 0)
-var userMutex = sync.Mutex{}
+var (
+	// users is map only because go has no good set implementation
+	users = make(map[int64]bool, 0)
 
-var userFile = path.Join("data", "users.json")
+	userMutex = sync.Mutex{}
+	userFile  = path.Join("data", "users.json")
+)
 
+// Load the users from the disk.
+// This function should be called once
 func loadUsers() error {
 	// Lock the mutex to ensure only one is modifying the data
 	userMutex.Lock()
@@ -34,6 +39,8 @@ func loadUsers() error {
 	return nil
 }
 
+// Save the current userlist to the disk
+// Note: the caller must lock the userMutex to avoid race conditions
 func saveUsers() error {
 	// Create the content
 	byteValue, err := json.Marshal(users)
@@ -56,7 +63,7 @@ func getUsers() []int64 {
 	return result
 }
 
-// Returns true if the specifyed userID is in the list of subscribed users
+// Returns true if the specified userID is in the list of subscribed users
 func isUser(user int64) bool {
 	userMutex.Lock()
 	defer userMutex.Unlock()
@@ -65,6 +72,7 @@ func isUser(user int64) bool {
 	return ok
 }
 
+// Add the specified user to the list of subscribed users
 func addUser(user int64) error {
 	userMutex.Lock()
 	defer userMutex.Unlock()
@@ -73,6 +81,7 @@ func addUser(user int64) error {
 	return saveUsers()
 }
 
+// Remove the specified user from the list
 func removeUser(user int64) error {
 	userMutex.Lock()
 	defer userMutex.Unlock()

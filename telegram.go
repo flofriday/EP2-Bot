@@ -16,7 +16,7 @@ import (
 func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-	// call the right function to handle the command
+	// Call the right function to handle the command
 	switch update.Message.Command() {
 	case "ls":
 		lsCmd(bot, update)
@@ -43,6 +43,12 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	case "help":
 		helpCmd(bot, update)
 	default:
+		// Ignore non-command messages in group chats
+		if update.Message.Chat.Type != "private" && !update.Message.IsCommand() {
+			return
+		}
+
+		// Send a message to show that the bot is confused
 		sendMessage(bot, update, "Sorry, I don't know that command.\nType /help to see what I know.")
 	}
 }
@@ -402,7 +408,7 @@ I was developed by my creator [flofriday](https://github.com/flofriday), and my 
 }
 
 func sendMessageAdminNeeded(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	message := "Sorry, but for security reasons, you only the admin is allowed to perform that action.\n\n" +
+	message := "Sorry, but for security reasons, only the admin is allowed to perform this action.\n\n" +
 		"However, there are good news 😄, you can download the my code and deploy me on your own server, " +
 		"so that you can be the admin:\nhttps://github.com/flofriday/EP2-Bot"
 	sendMessage(bot, update, message)
