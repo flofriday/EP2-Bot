@@ -14,9 +14,15 @@ func main() {
 	// Clone the repo if it does not exist
 	err := cloneIfNotExist()
 	if err != nil {
-		log.Fatal("Unable to download the repository: ", err.Error())
-		return
+		log.Panic("Unable to download the repository: ", err.Error())
 	}
+
+	// Load the subscribed users into memory
+	err = loadUsers()
+	if err != nil {
+		log.Panic("Unable to load the user file: ", err.Error())
+	}
+	log.Println("Users loaded")
 
 	// Setup the telegram repo
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_TOKEN"))

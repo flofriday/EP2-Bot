@@ -16,12 +16,6 @@ import (
 func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-	// Only allow the owner access
-	if isAdmin(update.Message.Chat.ID) == false {
-		sendMessage(bot, update, "Sorry, I can only answer my master.\n\n... but you can install a copy, just like me.\nhttps://github.com/flofriday/EP2-Bot")
-		return
-	}
-
 	// call the right function to handle the command
 	switch update.Message.Command() {
 	case "ls":
@@ -32,12 +26,18 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		readmeCmd(bot, update)
 	case "exercise":
 		exerciseCmd(bot, update)
+	case "subscribe":
+		subscribeCmd(bot, update)
+	case "unsubscribe":
+		unsubscribeCmd(bot, update)
 	case "cat":
 		catCmd(bot, update)
 	case "download":
 		downloadCmd(bot, update)
 	case "history":
 		historyCmd(bot, update)
+	case "statistic":
+		statisticCmd(bot, update)
 	case "start":
 		helpCmd(bot, update)
 	case "help":
@@ -121,7 +121,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 
 	// Check if there are new commits to notify
 	if len(newFilteredCommits) == 0 {
-		log.Println("Backgroundjob ran, no new commits to send the user.")
+		log.Println("Backgroundjob ran, no new commits to send the users.")
 		return
 	}
 
@@ -131,15 +131,24 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 		message += formatCommit(commit)
 	}
 
-	// Send the message
-	admin, _ := strconv.ParseInt(os.Getenv("TELEGRAM_ADMIN"), 10, 64)
-	msg := tgbotapi.NewMessage(admin, hideSecrets(message))
-	msg.ParseMode = "Markdown"
-	_, _ = bot.Send(msg)
-	log.Println("Backgroundjob ran, sent the user the updates.")
+	// Send the messages to the subscribed users
+	subscribed := getUsers()
+	for _, subscription := range subscribed {
+		msg := tgbotapi.NewMessage(subscription, hideSecrets(message))
+		msg.ParseMode = "Markdown"
+		_, _ = bot.Send(msg)
+	}
+
+	log.Println("Backgroundjob ran, sent the users the updates.")
 }
 
 func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	// Only admin is allowed to list files
+	if !isAdmin(update.Message.From.ID) {
+		sendMessageAdminNeeded(bot, update)
+		return
+	}
+
 	files, err := listFiles(update.Message.CommandArguments())
 	if err != nil {
 		sendMessage(bot, update, fmt.Sprintf("An error occoured while listing the files.\n`Error: %s`", err.Error()))
@@ -154,6 +163,12 @@ func lsCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 }
 
 func catCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	// Only admin is allowed to read files
+	if !isAdmin(update.Message.From.ID) {
+		sendMessageAdminNeeded(bot, update)
+		return
+	}
+
 	content, err := readFile(update.Message.CommandArguments())
 	if err != nil {
 		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading a file.\n`Error: %s`", err.Error()))
@@ -166,6 +181,12 @@ func catCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 }
 
 func downloadCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	// Only admin is allowed to read files
+	if !isAdmin(update.Message.From.ID) {
+		sendMessageAdminNeeded(bot, update)
+		return
+	}
+
 	path := filepath.Join(getGitDir(), update.Message.CommandArguments())
 
 	sendFile(bot, update, path)
@@ -238,6 +259,36 @@ func exerciseCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 }
 
+func subscribeCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	if isUser(update.Message.Chat.ID) {
+		sendMessage(bot, update, "This channel is already subscribed")
+		return
+	}
+
+	err := addUser(update.Message.Chat.ID)
+	if err != nil {
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading adding the subscription.\n`Error: %s`", err.Error()))
+		return
+	}
+	message := "This channel is now subscribed"
+	sendMessage(bot, update, message)
+}
+
+func unsubscribeCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	if !isUser(update.Message.Chat.ID) {
+		sendMessage(bot, update, "This channel was not subscribed")
+		return
+	}
+
+	err := removeUser(update.Message.Chat.ID)
+	if err != nil {
+		sendMessage(bot, update, fmt.Sprintf("An error occoured while reading deleting the subscription.\n`Error: %s`", err.Error()))
+		return
+	}
+	message := "This channel is no longer subscribed"
+	sendMessage(bot, update, message)
+}
+
 func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	oldHash, err := getCurrentCommit()
 	if err != nil {
@@ -277,6 +328,20 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		return
 	}
 
+	// For non-admin users we filter the commits so that they can only see the ones by faculty members
+	if !isAdmin(update.Message.From.ID) {
+		filtered := make([]gitobject.Commit, 0, len(commits))
+		for _, c := range commits {
+			// Don't append the commits where the matriculation number appears in
+			if strings.Contains(c.Author.Email, getGitUser()) && getGitUser() != "" {
+				continue
+			}
+
+			filtered = append(filtered, c)
+		}
+		commits = filtered
+	}
+
 	// Split the arguments
 	rawarg := strings.TrimSpace(update.Message.CommandArguments())
 	args := strings.SplitN(rawarg, " ", 2)
@@ -302,6 +367,12 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	sendMessage(bot, update, message)
 }
 
+func statisticCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	users := len(getUsers())
+	message := fmt.Sprintf("Subscribed channels: %d", users)
+	sendMessage(bot, update, message)
+}
+
 func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	commands := `
 /ls - List all files in a directory
@@ -309,15 +380,32 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 /download - Send a file
 /readme - Similar to /cat README.md
 /exercise - Display the exercise PDFs
-/history - Print the git history
+/subscribe - Send updates when new exercises get added
+/unsubscribe - Unsubscribe from the updates
+/history - Send the git history
+/statistic - Send some information about the bot
 /pull - Pull the newest git changes
 /help - This help
 `
+
+	if !isAdmin(update.Message.From.ID) {
+		commands += "\nUnfortunately, you are not the admin of this bot, so many commands might not work. " +
+			"However, you can download the bot at the link below and run it on your own server, " +
+			"so that you are the admin of your instance."
+	}
+
 	about := `
 I was developed by my creator [flofriday](https://github.com/flofriday), and my source is publicly available on [GitHub](https://github.com/flofriday/EP2-Bot) and [GitLab](https://gitlab.com/flofriday/EP2-Bot).
 `
 
 	sendMessage(bot, update, fmt.Sprintf("*A List of things I can do:*%s\n%s", commands, about))
+}
+
+func sendMessageAdminNeeded(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	message := "Sorry, but for security reasons, you only the admin is allowed to perform that action.\n\n" +
+		"However, there are good news 😄, you can download the my code and deploy me on your own server, " +
+		"so that you can be the admin:\nhttps://github.com/flofriday/EP2-Bot"
+	sendMessage(bot, update, message)
 }
 
 func sendMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update, text string) {
@@ -399,7 +487,7 @@ func hideSecrets(text string) string {
 	return text
 }
 
-func isAdmin(telegramID int64) bool {
-	original, _ := strconv.ParseInt(os.Getenv("TELEGRAM_ADMIN"), 10, 64)
-	return telegramID == original
+func isAdmin(telegramID int) bool {
+	original, _ := strconv.ParseInt(os.Getenv("TELEGRAM_ADMIN"), 10, 32)
+	return telegramID == int(original)
 }
