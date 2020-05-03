@@ -3,8 +3,10 @@ A telegram bot for "Einführung in die Programmierung 2" TU Vienna
 
 ![Screenshot](screenshot.png)
 
+Try the bot on telegram: https://t.me/ep2_bot
+
 At [TU Vienna](https://www.tuwien.at/en/) we get a git repository for "Einführung in die Programmierung 2" (Introduction to Programming 2). 
-All of our assignments and evaluations will get to us via that git repository.
+All of our assignments get to us via that git repository.
 
 While git is amazing I would love that information without needing to log in every time. 
 So for this reason I wrote this Telegram bot to tell me when new assignments are out.

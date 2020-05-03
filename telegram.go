@@ -409,7 +409,7 @@ I was developed by my creator [flofriday](https://github.com/flofriday), and my 
 
 func sendMessageAdminNeeded(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	message := "Sorry, but for security reasons, only the admin is allowed to perform this action.\n\n" +
-		"However, there are good news 😄, you can download the my code and deploy me on your own server, " +
+		"However, there are good news 😄, you can download my code and deploy me on your own server, " +
 		"so that you can be the admin:\nhttps://github.com/flofriday/EP2-Bot"
 	sendMessage(bot, update, message)
 }
