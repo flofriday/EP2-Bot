@@ -3,17 +3,17 @@ A telegram bot for "Einführung in die Programmierung 2" TU Vienna
 
 ![Screenshot](screenshot.png)
 
-Try the bot on telegram: https://t.me/ep2_bot
+**Try the bot on telegram: https://t.me/ep2_bot**
 
 At [TU Vienna](https://www.tuwien.at/en/) we get a git repository for "Einführung in die Programmierung 2" (Introduction to Programming 2). 
 All of our assignments get to us via that git repository.
 
 While git is amazing I would love that information without needing to log in every time. 
 So for this reason I wrote this Telegram bot to tell me when new assignments are out.
-The bot crawls the repository every 30minutes and writes me a telegram message if there are new commits that are not
+The bot crawls the repository every 30minutes and writes me and some classmates a telegram message if there are new commits that are not
 from me.
 
-## Try the bot
+## Run the bot
 You need to install the [golang compiler](https://golang.org/).
 
 Than type:
@@ -29,7 +29,7 @@ Replace the XXXX with the token for your telegram bot (you can get this via [Bot
 In the GIT_URL the USER is your student number (german: Matrikelnummer) and PASSWORD is a personal access token (you can get this in GitLab under Profile -> Settings.
 Give the token only access to "read_repository") [More about access tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html).
 
-### Or try with docker
+### Or run with docker
 First install [docker](https://www.docker.com/)
 ```bash
 docker build -t ep2bot-template .
