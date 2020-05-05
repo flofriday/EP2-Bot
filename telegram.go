@@ -9,9 +9,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
+
+var buildDate = "not available"
 
 func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
@@ -40,6 +43,8 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		statisticCmd(bot, update)
 	case "start":
 		helpCmd(bot, update)
+	case "nerdinfo":
+		nerdinfoCmd(bot, update)
 	case "help":
 		helpCmd(bot, update)
 	default:
@@ -115,7 +120,7 @@ func backgroundJob(bot *tgbotapi.BotAPI) {
 		return
 	}
 
-	// Filter commits from the user. The user commited them so why would he want to see them ?
+	// Filter commits from the users. The users committed them so why would they want to see them ?
 	newFilteredCommits := make([]gitobject.Commit, 0, 0)
 	for _, c := range newCommits {
 		if strings.Contains(c.Author.Email, getGitUser()) && getGitUser() != "" {
@@ -319,11 +324,51 @@ func pullCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		return
 	}
 
-	message := "*New commits:*\n\n"
+	// Filter commits from the users. The users committed them so why would they want to see them ?
+	newFilteredCommits := make([]gitobject.Commit, 0, 0)
+	for _, c := range newCommits {
+		if strings.Contains(c.Author.Email, getGitUser()) && getGitUser() != "" {
+			continue
+		}
+
+		newFilteredCommits = append(newFilteredCommits, c)
+	}
+
+	// Create a message for the admin
+	adminMessage := "*New commits:*🎉🎊\n"
 	for _, commit := range newCommits {
+		adminMessage += formatCommit(commit)
+	}
+
+	// Send the admin the message
+	if len(newFilteredCommits) > 0 || isAdmin(update.Message.From.ID) {
+		msg := tgbotapi.NewMessage(int64(getAdmin()), hideSecrets(adminMessage))
+		msg.ParseMode = "Markdown"
+		_, _ = bot.Send(msg)
+	}
+
+	// Don't send the normal users private commits
+	if !isAdmin(update.Message.From.ID) && len(newFilteredCommits) == 0 {
+		sendMessage(bot, update, "Repository is already up to date.")
+		return
+	}
+
+	// Create a message and send it the users
+	message := "*New commits:*🎉🎊\n"
+	for _, commit := range newFilteredCommits {
 		message += formatCommit(commit)
 	}
-	sendMessage(bot, update, message)
+
+	// Send the messages to the subscribed users (except the admin, cause he already got a message)
+	subscribed := getUsers()
+	for _, subscription := range subscribed {
+		if int64(getAdmin()) == subscription {
+			continue
+		}
+		msg := tgbotapi.NewMessage(subscription, hideSecrets(message))
+		msg.ParseMode = "Markdown"
+		_, _ = bot.Send(msg)
+	}
 }
 
 func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
@@ -379,6 +424,13 @@ func statisticCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	sendMessage(bot, update, message)
 }
 
+func nerdinfoCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	message := fmt.Sprintf("Written in go\nGo Version: %s\nOS: %s\nArchitecture: %s\nNumber CPU: %d\n"+
+		"Number Goroutines: %d\nBuilt at: %s",
+		runtime.Version(), runtime.GOOS, runtime.GOARCH, runtime.NumCPU(), runtime.NumGoroutine(), buildDate)
+	sendMessage(bot, update, message)
+}
+
 func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	commands := `
 /ls - List all files in a directory
@@ -389,8 +441,9 @@ func helpCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 /subscribe - Send updates when new exercises get added
 /unsubscribe - Unsubscribe from the updates
 /history - Send the git history
-/statistic - Send some information about the bot
 /pull - Pull the newest git changes
+/statistic - Send some information about the bot
+/nerdinfo - Information for nerds
 /help - This help
 `
 
@@ -491,6 +544,11 @@ func hideSecrets(text string) string {
 		text = strings.ReplaceAll(text, getGitUser(), "$USER")
 	}
 	return text
+}
+
+func getAdmin() int {
+	id, _ := strconv.ParseInt(os.Getenv("TELEGRAM_ADMIN"), 10, 32)
+	return int(id)
 }
 
 func isAdmin(telegramID int) bool {

@@ -19,7 +19,7 @@ RUN go mod download
 COPY . .
 
 # Compile the server
-RUN GO111MODULE=on CGO_ENABLED=0 go build -ldflags '-s'
+RUN GO111MODULE=on CGO_ENABLED=0 go build -ldflags "-s -X 'main.buildDate=$(date)'"
 
 # Run the server
 ENTRYPOINT ["./EP2-Bot"]
