@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	gitobject "github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jasonlvhit/gocron"
-	gitobject "gopkg.in/src-d/go-git.v4/plumbing/object"
 	"log"
 	"os"
 	"path"
@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-var buildDate = "not available"
+var buildDate = "<__unknown__>"
 
 func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
@@ -514,7 +514,7 @@ func formatCommit(commit gitobject.Commit) string {
 	if len(files) == 0 {
 		fileText = "_unable to load the files_"
 	} else {
-		fileText = fmt.Sprintf("\\[%d] `%s`", len(files), strings.Join(files, ", "))
+		fileText = fmt.Sprintf("\\[%d]\n`%s`", len(files), strings.Join(files, "\n"))
 	}
 
 	// Generate the message text where the first line is treated like a header and is in bold, while the rest is normal
@@ -525,9 +525,8 @@ func formatCommit(commit gitobject.Commit) string {
 		messageText += "\n" + strings.TrimSpace(message[1])
 	}
 
-	return fmt.Sprintf("%s\nHash: %s\nAuthor: %s <%s>\nDate: %s\nFiles: %s\n\n",
+	return fmt.Sprintf("%s\nAuthor: %s <%s>\nDate: %s\nFiles: %s\n\n",
 		messageText,
-		commit.Hash,
 		commit.Author.Name,
 		commit.Author.Email,
 		commit.Author.When.Local().Format("02.01.2006 15:04"),

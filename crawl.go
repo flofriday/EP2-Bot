@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"gopkg.in/src-d/go-git.v4"
-	gitobject "gopkg.in/src-d/go-git.v4/plumbing/object"
+	"github.com/go-git/go-git/v5"
+	gitobject "github.com/go-git/go-git/v5/plumbing/object"
 	"io/ioutil"
 	"log"
 	"net/url"
