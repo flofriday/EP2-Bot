@@ -1,5 +1,5 @@
 # Choose apline because it has the smallest footprint (download size)
-FROM golang:1.14.3-alpine
+FROM golang:1.14.2-alpine
 
 # Install git for go download and tzdata to have to correct time
 # Also set the correct time and print it
