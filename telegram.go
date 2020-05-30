@@ -43,6 +43,8 @@ func handleMessage(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		statisticCmd(bot, update)
 	case "start":
 		helpCmd(bot, update)
+	case "broadcast":
+		broadcastCmd(bot, update)
 	case "nerdinfo":
 		nerdinfoCmd(bot, update)
 	case "help":
@@ -418,6 +420,39 @@ func historyCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	sendMessage(bot, update, message)
 }
 
+func broadcastCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	if !isAdmin(update.Message.From.ID) {
+		sendMessage(bot, update, "Hey! Only the admin is allowed to perform this action. You shouldn't even know it exists 🤬!")
+		return
+	}
+
+	// Avoid sending empty strings by accident
+	message := update.Message.CommandArguments()
+	if strings.TrimSpace(message) == "" {
+		sendMessage(bot, update, "You cannot send an empty message to the subscribed users.")
+		return
+	}
+
+	// Avoid sending broadcast by accident
+	// Therefore we enforce that the last character is a 🆗
+	if strings.LastIndex(message, "🆗") != len(message)-len("🆗") {
+		sendMessage(bot, update, "⚠️*Broadcast not sent*⚠️\n"+
+			"To avoid sending a broadcast by accident, you must end your message with the 🆗 emoji. "+
+			"This emoji will be removed by me before sending the message to the users.")
+		return
+	}
+	message = message[:len(message)-len("🆗")]
+
+	// Send the message to everyone, yes also back to the admin
+	subscribed := getUsers()
+	for _, subscription := range subscribed {
+		msg := tgbotapi.NewMessage(subscription, hideSecrets(message))
+		msg.ParseMode = "Markdown"
+		_, _ = bot.Send(msg)
+	}
+
+}
+
 func statisticCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	users := len(getUsers())
 	message := fmt.Sprintf("Subscribed channels: %d", users)
@@ -426,7 +461,7 @@ func statisticCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 func nerdinfoCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	message := fmt.Sprintf("Written in go\nGo Version: %s\nOS: %s\nArchitecture: %s\nNumber CPU: %d\n"+
-		"Number Goroutines: %d\nBuilt at: %s",
+		"Number Goroutines: %d\nBuilt at: %s\nRepository: https://gitlab.com/flofriday/EP2-Bot",
 		runtime.Version(), runtime.GOOS, runtime.GOARCH, runtime.NumCPU(), runtime.NumGoroutine(), buildDate)
 	sendMessage(bot, update, message)
 }
