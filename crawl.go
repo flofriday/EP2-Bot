@@ -11,6 +11,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
+)
+
+var (
+	pullMutex sync.Mutex
+	pullTime time.Time
 )
 
 // Clone the repo if it doesn't exist of download it if it does.
@@ -37,6 +44,10 @@ func cloneIfNotExist() error {
 
 // Pull the repo from the origin
 func pull() error {
+	// Lock the Mutex
+	pullMutex.Lock()
+	defer pullMutex.Unlock()
+
 	// Open the repo
 	r, err := git.PlainOpen(getGitDir())
 	if err != nil {
@@ -51,6 +62,7 @@ func pull() error {
 
 	// Pull the latest changes from the origin remote and merge into the current branch
 	err = w.Pull(&git.PullOptions{RemoteName: "origin"})
+	pullTime = time.Now()
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return err
 	}
@@ -146,6 +158,12 @@ func getCurrentCommit() (string, error) {
 
 	ref, err := r.Head()
 	return ref.Hash().String(), nil
+}
+
+func getPullTime() time.Time {
+	pullMutex.Lock()
+	defer pullMutex.Unlock()
+	return pullTime
 }
 
 func readFile(path string) ([]byte, error) {

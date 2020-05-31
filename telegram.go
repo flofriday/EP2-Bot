@@ -455,7 +455,7 @@ func broadcastCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 func statisticCmd(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	users := len(getUsers())
-	message := fmt.Sprintf("Subscribed channels: %d", users)
+	message := fmt.Sprintf("Subscribed channels: %d\nLast pulled at: %s", users, getPullTime().Format("15:04 "))
 	sendMessage(bot, update, message)
 }
 
