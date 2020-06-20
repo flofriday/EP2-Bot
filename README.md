@@ -3,7 +3,9 @@ A telegram bot for "Einführung in die Programmierung 2" TU Vienna
 
 ![Screenshot](screenshot.png)
 
-**Try the bot on telegram: https://t.me/ep2_bot**
+~~**Try the bot on telegram: https://t.me/ep2_bot**~~ <br>
+**Note:** I am no longer in this course so I disabled the bot. If you want to run a
+copy of the bot, I am more than willing to help you set it up.
 
 At [TU Vienna](https://www.tuwien.at/en/) we get a git repository for "Einführung in die Programmierung 2" (Introduction to Programming 2). 
 All of our assignments get to us via that git repository.
